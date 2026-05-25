@@ -6,7 +6,7 @@
 
 ## 截图
 
-<img src="assets/preview1.png" width="400">
+<img src="assets/record1.gif" width="400">
 
 ## 功能
 
