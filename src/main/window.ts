@@ -25,10 +25,7 @@ export async function createWindow(
       pkg.env.PORT
     }#${pagePath}`
 
-    win.loadURL(url, {
-      // userAgent:
-      //   'Mozilla/5.0 (iPhone; CPU iPhone OS 10_3 like Mac OS X) AppleWebKit/603.1.23 (KHTML, like Gecko) Version/10.0 Mobile/14E5239e Safari/602.1',
-    })
+    win.loadURL(url)
     win.webContents.openDevTools()
   }
 
