@@ -16,10 +16,22 @@ app.commandLine.appendSwitch('use-angle', 'opengles')
 // Allow SwiftShader software fallback if hardware WebGL fails
 app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 
-// Register privileged schemes before app is ready (required in Electron 25+)
+const MIME_TYPES: Record<string, string> = {
+  json: 'application/json',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  moc: 'application/octet-stream',
+  moc3: 'application/octet-stream',
+  mtl: 'text/plain',
+  dat: 'application/octet-stream',
+}
+
+// Register privileged schemes before app is ready
 protocol.registerSchemesAsPrivileged([
   {
-    scheme: 'file',
+    scheme: 'ppet',
     privileges: {
       bypassCSP: true,
       supportFetchAPI: true,
@@ -28,6 +40,26 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ])
+
+// Helper to serve local files through the ppet:// protocol
+async function handlePpetRequest(request: Request): Promise<Response> {
+  try {
+    const url = new URL(request.url)
+    // ppet:///home/.../file.json -> /home/.../file.json
+    const filePath = decodeURIComponent(url.pathname)
+    const data = await readFile(filePath)
+    const ext = filePath.split('.').pop()?.toLowerCase() || ''
+    return new Response(data, {
+      headers: {
+        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+      },
+    })
+  } catch {
+    return new Response('Not found', { status: 404 })
+  }
+}
 
 if (app.isPackaged) {
   if (!app.requestSingleInstanceLock()) {
@@ -39,35 +71,10 @@ if (app.isPackaged) {
 let mainWindowState: windowStateKeeper.State
 
 app.whenReady().then(async () => {
-  // Handle file:// protocol by reading files directly and returning proper Response
-  protocol.handle('file', async (request) => {
-    try {
-      const url = new URL(request.url)
-      const filePath = decodeURIComponent(url.pathname)
-      const data = await readFile(filePath)
-      const ext = filePath.split('.').pop()?.toLowerCase() || ''
-      const mimeTypes: Record<string, string> = {
-        json: 'application/json',
-        png: 'image/png',
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        gif: 'image/gif',
-        moc: 'application/octet-stream',
-        moc3: 'application/octet-stream',
-        mtl: 'text/plain',
-      }
-      return new Response(data, {
-        headers: {
-          'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-          'Access-Control-Allow-Origin': '*',
-        },
-      })
-    } catch {
-      return new Response('Not found', { status: 404 })
-    }
-  })
+  // Register ppet:// protocol for serving local Live2D model files
+  protocol.handle('ppet', handlePpetRequest)
 
-  // Set up IPC handlers before creating windows
+  // Set up IPC handlers
   ipcMain.on('get-config', (event) => {
     event.returnValue = (global as any).config
   })

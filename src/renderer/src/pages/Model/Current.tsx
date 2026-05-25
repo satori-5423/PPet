@@ -7,10 +7,13 @@ export type CurrentType = {
 }
 
 const parseModelPath = (p: string) => {
-  // Handle file:/// prefix - preserve triple slash for absolute paths
+  // Handle ppet:/// and file:/// prefixes
   let protocol = ''
   let cleanPath = p
-  if (p.startsWith('file:///')) {
+  if (p.startsWith('ppet:///')) {
+    protocol = 'ppet:///'
+    cleanPath = p.slice(9) // len of 'ppet:///'
+  } else if (p.startsWith('file:///')) {
     protocol = 'file:///'
     cleanPath = p.slice(8) // len of 'file:///'
   } else if (p.startsWith('http://') || p.startsWith('https://')) {

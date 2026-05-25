@@ -45,7 +45,7 @@ contextBridge.exposeInMainWorld('bridge', {
   getModels,
   scanDirectory: async (dirPath: string) => {
     const models = await findModelFiles(dirPath)
-    return models.map((p) => 'file://' + p)
+    return models.map((p) => 'ppet:///' + p)
   },
   setWinResizable: (resizable: boolean) =>
     ipcRenderer.send('set-resizable', resizable),
