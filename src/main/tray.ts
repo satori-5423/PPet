@@ -10,6 +10,7 @@ import {
   Menu,
 } from 'electron'
 import { config } from '@src/common'
+import { readdirSync } from 'fs'
 
 import { createWindow } from './window'
 import trayIcon from '../../static/icons/tray.png'
@@ -19,17 +20,11 @@ const langs = {
     alwaysOnTop: '@置顶',
     ignoreMouseEvents: '忽略点击',
     openAtLogin: '开机启动',
-    plugins: '插件中心',
     tools: '小工具',
     language: '语言',
     zoomIn: '放大',
     zoomOut: '缩小',
     zoomReset: '原始大小',
-    canvasSettings: '画布设置',
-    clearSettings: '清除设置',
-    importModel: '导入模型',
-    importOnlineModel: '导入在线模型',
-    removeModel: '移除模型',
     reRender: '重新渲染',
     debug: '调试',
     feedback: '反馈',
@@ -37,34 +32,19 @@ const langs = {
     quit: '退出',
     next: '下一个模型',
     prev: '上一个模型',
-    model: {
-      title: '请选择模型配置文件',
-      buttonLabel: '导入模型',
-      filtersName: '模型配置文件',
-    },
-    errorBox: {
-      title: '导入模型失败',
-      title1: '移除模型失败',
-      getContent: (text: string) =>
-        `无效的model配置文件，该文件为'.json'结尾，会包含${text}等字段`,
-    },
+    models: '模型列表',
+    scanDir: '扫描模型目录',
     settings: '配置',
   },
   en: {
     alwaysOnTop: 'Always On Top',
     ignoreMouseEvents: 'Ignore Mouse Events',
     openAtLogin: 'Open At Login',
-    plugins: 'Plugins',
     tools: 'Tools',
     language: 'Language',
     zoomIn: 'Zoom In',
     zoomOut: 'Zoom Out',
     zoomReset: 'Zoom Reset',
-    canvasSettings: 'Canvas Settings',
-    clearSettings: 'Clear Canvas Settings',
-    importModel: 'Import Model',
-    importOnlineModel: 'Import Online Model',
-    removeModel: 'Remove Model',
     reRender: 'ReRender',
     debug: 'Debug',
     feedback: 'Feedback',
@@ -72,17 +52,8 @@ const langs = {
     quit: 'Quit',
     next: 'Next Model',
     prev: 'Prev Model',
-    model: {
-      title: 'Please select model configuration file',
-      buttonLabel: 'Import model',
-      filtersName: 'model configuration file',
-    },
-    errorBox: {
-      title: 'Import model failed',
-      title1: 'Remove model failed',
-      getContent: (text: string) =>
-        `Invalid model configuration file. The file ends with '.json' and should contain fields such as ${text}`,
-    },
+    models: 'Model List',
+    scanDir: 'Scan Model Dir',
     settings: 'Settings',
   },
 }
@@ -90,6 +61,62 @@ const langs = {
 type langType = 'zh' | 'en'
 
 let tray: Tray | null = null
+
+// Scan directory for model files and update model list
+function scanModelDir(dirPath: string, mainWindow: BrowserWindow) {
+  const results: string[] = []
+  try {
+    const entries = readdirSync(dirPath, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry.name)
+      if (entry.isDirectory()) {
+        results.push(...scanAndCollect(fullPath))
+      } else if (
+        entry.name.endsWith('model.json') ||
+        entry.name.endsWith('.model3.json')
+      ) {
+        results.push('http://127.0.0.1:19999/' + fullPath)
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  if (results.length > 0) {
+    const modelsJson = JSON.stringify(results)
+    mainWindow.webContents
+      .executeJavaScript(
+        `window.loadModels && window.loadModels(${modelsJson})`,
+      )
+      .catch(() => {})
+  }
+}
+
+function scanAndCollect(dirPath: string): string[] {
+  const results: string[] = []
+  try {
+    const entries = readdirSync(dirPath, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry.name)
+      if (entry.isDirectory()) {
+        results.push(...scanAndCollect(fullPath))
+      } else if (
+        entry.name.endsWith('model.json') ||
+        entry.name.endsWith('.model3.json')
+      ) {
+        results.push(fullPath)
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return results
+}
+
+function getModelName(path: string): string {
+  const parts = path.replace(/^.*:\/+/, '').split('/')
+  return parts[parts.length - 2] || path
+}
 
 const initTray = (mainWindow: BrowserWindow) => {
   if (!tray) {
@@ -99,7 +126,9 @@ const initTray = (mainWindow: BrowserWindow) => {
   const handleClickLangRadio = (lang: langType) => {
     config.set('language', lang)
     initTray(mainWindow)
-    mainWindow.webContents.executeJavaScript(`window.setLanguage('${lang}')`)
+    mainWindow.webContents
+      .executeJavaScript(`window.setLanguage && window.setLanguage('${lang}')`)
+      .catch(() => {})
   }
 
   const alwaysOnTop = config.get('alwaysOnTop')
@@ -111,7 +140,40 @@ const initTray = (mainWindow: BrowserWindow) => {
   mainWindow.setAlwaysOnTop(alwaysOnTop)
   mainWindow.setIgnoreMouseEvents(ignoreMouseEvents, { forward: true })
 
+  // Build model list submenu from current model list
+  const getModelSubmenu = (): Array<MenuItemConstructorOptions | MenuItem> => {
+    const modelList = config.get('modelList') as string[] | undefined
+    const modelPath = config.get('modelPath') as string | undefined
+    if (!modelList || modelList.length === 0) {
+      return [
+        {
+          label: '  (no models)',
+          enabled: false,
+        },
+      ]
+    }
+    return modelList.map((path) => ({
+      label: getModelName(path),
+      type: 'radio' as const,
+      checked: path === modelPath,
+      click: () => {
+        config.set('modelPath', path)
+        mainWindow.webContents
+          .executeJavaScript(`window.setModelPath && window.setModelPath('${path.replace(/'/g, "\\'")}')`)
+          .catch(() => {})
+      },
+    }))
+  }
+
   const template: Array<MenuItemConstructorOptions | MenuItem> = [
+    {
+      label: cl.models,
+      type: 'submenu',
+      submenu: getModelSubmenu(),
+    },
+    {
+      type: 'separator',
+    },
     {
       label: cl.alwaysOnTop,
       type: 'checkbox',
@@ -129,9 +191,9 @@ const initTray = (mainWindow: BrowserWindow) => {
       checked: showTool,
       click: (item) => {
         const { checked } = item
-        mainWindow.webContents.executeJavaScript(
-          `window.setSwitchTool(${checked})`,
-        )
+        mainWindow.webContents
+          .executeJavaScript(`window.setSwitchTool && window.setSwitchTool(${checked})`)
+          .catch(() => {})
         config.set('showTool', checked)
       },
     },
@@ -147,40 +209,33 @@ const initTray = (mainWindow: BrowserWindow) => {
       },
     },
     {
-      label: cl.settings,
-      accelerator: 'CmdOrCtrl+,',
-      click: async () => {
-        await createWindow(
-          {
-            title: cl.settings,
-            width: 800,
-            height: 600,
-            webPreferences: {
-              preload: join(__dirname, '../preload/index.cjs'),
-              webSecurity: false,
-              sandbox: false,
-              backgroundThrottling: true,
-            },
-          },
-          '/setting',
-        )
-      },
-    },
-    {
       type: 'separator',
     },
     {
       label: cl.prev,
       accelerator: 'CmdOrCtrl+p',
       click: () => {
-        mainWindow.webContents.executeJavaScript('window.prevModel()')
+        mainWindow.webContents
+          .executeJavaScript('window.prevModel && window.prevModel()')
+          .catch(() => {})
       },
     },
     {
       label: cl.next,
       accelerator: 'CmdOrCtrl+n',
       click: () => {
-        mainWindow.webContents.executeJavaScript('window.nextModel()')
+        mainWindow.webContents
+          .executeJavaScript('window.nextModel && window.nextModel()')
+          .catch(() => {})
+      },
+    },
+    {
+      label: cl.scanDir,
+      click: () => {
+        const dir =
+          process.env.PPET_MODEL_DIR ||
+          join(app.getPath('home'), 'GitHub', 'live2d-model-assets', 'assets')
+        scanModelDir(dir, mainWindow)
       },
     },
     {

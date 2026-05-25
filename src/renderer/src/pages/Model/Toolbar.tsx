@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import styled from 'styled-components'
 import { Dispatch, RootState } from '../../store'
@@ -8,56 +8,51 @@ const Wrapper = styled.div`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  width: 200px;
+  justify-content: center;
+  width: 50px;
   color: #aaa;
   opacity: 0;
   position: absolute;
-  right: 0;
-  top: 0;
-  transition: opacity 0.3s;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 8px 0 0 8px;
-  overflow-y: auto;
-  padding: 8px;
-  z-index: 10;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity 1s;
+
+  & span {
+    color: #6a6a6a;
+    display: block;
+    line-height: 30px;
+    text-align: center;
+    transition: color 0.3s;
+    cursor: pointer;
+
+    &:hover {
+      color: #fa0;
+      opacity: 1;
+    }
+  }
 
   &:hover {
     opacity: 1;
   }
 `
 
-const ModelItem = styled.div<{ active: boolean }>`
-  color: ${(p) => (p.active ? '#fa0' : '#ccc')};
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-radius: 4px;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fa0;
-  }
+const MoveIcon = styled.span`
+  -webkit-app-region: drag;
 `
 
 const Toolbar: FC<{
   onShowMessage: (tips: TipsType) => void
 }> = ({ onShowMessage }) => {
   const dispatch = useDispatch<Dispatch>()
-  const { modelPath, modelList, resizable } = useSelector(
-    (state: RootState) => ({
-      ...state.config,
-      ...state.win,
-    }),
-  )
+  const { modelPath, resizable } = useSelector((state: RootState) => ({
+    ...state.config,
+    ...state.win,
+  }))
 
   const showMessage = (text: string, timeout: number, priority: number) => {
     onShowMessage({ text, priority, timeout })
   }
-
   const showHitokoto = () => {
     fetch('https://v1.hitokoto.cn')
       .then((response) => response.json())
@@ -69,36 +64,43 @@ const Toolbar: FC<{
         }, 6000)
       })
   }
-
-  const getModelName = (path: string) => {
-    // Extract readable name from model path
-    const parts = path.replace(/^.*:\/+/, '').split('/')
-    // Get second-to-last meaningful part (before model.json)
-    const namePart = parts[parts.length - 2] || path
-    return namePart.replace(/\.model\d?\.json$/, '').replace(/^22\./, '')
+  const loadOtherModel = () => {
+    dispatch.config.nextModel()
   }
+  const setResizable = () => {
+    dispatch.win.setResizable(!resizable)
+  }
+  const showInfo = () => {
+    const text = `${modelPath}`
+    showMessage(text, 8000, 11)
+  }
+
+  const toolList = [
+    { name: 'comment', icon: 'comment', call: showHitokoto },
+    {
+      name: 'user',
+      icon: 'user-circle',
+      call: loadOtherModel,
+    },
+    { name: 'square', icon: 'square-o', call: setResizable },
+    { name: 'info', icon: 'info-circle', call: showInfo },
+  ]
 
   return (
     <Wrapper>
-      <div style={{ textAlign: 'center', marginBottom: 4 }}>
-        <span style={{ fontSize: 11, color: '#888' }}>
-          {modelList.length} models
-        </span>
-      </div>
-      {modelList.map((path) => {
-        const name = getModelName(path)
-        const active = path === modelPath
+      {toolList.map((item) => {
+        const { name, icon, call } = item
         return (
-          <ModelItem
-            key={path}
-            active={active}
-            onClick={() => dispatch.config.setModelPath(path)}
-            title={path}
-          >
-            {name}
-          </ModelItem>
+          <span
+            onClick={() => {
+              call()
+            }}
+            key={name}
+            className={`fa fa-lg fa-${icon}`}
+          ></span>
         )
       })}
+      <MoveIcon className="fa fa-lg fa-arrows"></MoveIcon>
     </Wrapper>
   )
 }

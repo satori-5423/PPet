@@ -77,6 +77,11 @@ const Model = () => {
     ;(window as any).setLanguage = dispatch.win.setLanguage
     ;(window as any).nextModel = dispatch.config.nextModel
     ;(window as any).prevModel = dispatch.config.prevModel
+    ;(window as any).setModelPath = dispatch.config.setModelPath
+    ;(window as any).loadModels = (models: string[]) => {
+      dispatch.config.setModelList(models)
+      dispatch.config.setModelPath(models[0])
+    }
   }, [])
 
   useEffect(() => {
