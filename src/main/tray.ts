@@ -158,7 +158,7 @@ const initTray = (mainWindow: BrowserWindow) => {
             webPreferences: {
               preload: join(__dirname, '../preload/index.cjs'),
               webSecurity: false,
-              backgroundThrottling: false,
+              backgroundThrottling: true,
             },
           },
           '/setting',
