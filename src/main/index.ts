@@ -7,12 +7,10 @@ import initTray from './tray'
 import { createWindow, winPagePathMap } from './window'
 
 // Force native Wayland - no XWayland fallback
-app.commandLine.appendSwitch('ozone-platform-hint', 'auto')
-app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations')
-// Use Ozone platform with Wayland
-if (process.env.XDG_SESSION_TYPE === 'wayland') {
-  app.commandLine.appendSwitch('ozone-platform', 'wayland')
-}
+app.commandLine.appendSwitch('ozone-platform', 'wayland')
+
+// Use native EGL on Linux with AMD GPU (bypasses ANGLE which has issues with multi-GPU)
+app.commandLine.appendSwitch('use-gl', 'egl')
 
 // Register privileged schemes before app is ready (required in Electron 25+)
 protocol.registerSchemesAsPrivileged([
