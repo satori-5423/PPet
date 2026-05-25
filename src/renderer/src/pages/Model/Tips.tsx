@@ -236,7 +236,7 @@ export type TipsType = {
 
 const Tips: FC<TipsType> = (props) => {
   const [currentTips, setCurrentTips] = useState<TipsType | null>(null)
-  const timerRef = useRef<number>()
+  const timerRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     if (

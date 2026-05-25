@@ -43,9 +43,12 @@ async function watchMain() {
     configFile: 'configs/vite.main.ts',
     writeBundle() {
       electronProcess && electronProcess.kill()
+      // Remove DISPLAY to prevent X11/XWayland interference on Wayland-only setups
+      const env = { ...process.env, ...pkg.env }
+      delete env.DISPLAY
       electronProcess = spawn(electron, ['.'], {
         stdio: 'inherit',
-        env: Object.assign(process.env, pkg.env),
+        env,
       })
     },
   })

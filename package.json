@@ -23,6 +23,7 @@
     "@rematch/persist": "^2.1.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/redux-state-sync": "^3.1.0",
     "@vitejs/plugin-react": "^4.3.0",
     "antd": "^5.22.0",
     "chalk": "^5.0.0",

@@ -89,7 +89,7 @@ const langs = {
 
 type langType = 'zh' | 'en'
 
-let tray: electron.Tray
+let tray: Tray | null = null
 
 const initTray = (mainWindow: BrowserWindow) => {
   if (!tray) {
