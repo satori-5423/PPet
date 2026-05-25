@@ -3,19 +3,25 @@ import React, { FC, useEffect, useRef } from 'react'
 export type LegacyType = { modelPath: string; width: number; height: number }
 
 const Legacy: FC<LegacyType> = ({ modelPath, height, width }) => {
-  const isMountRef = useRef(false)
+  const prevSizeRef = useRef({ width, height })
+  const isFirstMount = useRef(true)
 
   useEffect(() => {
     ;(window as any).loadlive2d('live2d', modelPath)
   }, [modelPath])
 
   useEffect(() => {
-    //  使用 key={+new Date()} 会导致渲染模型不完整，这里暂时对窗口改变时进行刷新
-    // TODO
-    if (isMountRef.current) {
+    if (isFirstMount.current) {
+      isFirstMount.current = false
+      return
+    }
+    // Only reload if size actually changed (not on StrictMode double-mount)
+    if (
+      prevSizeRef.current.width !== width ||
+      prevSizeRef.current.height !== height
+    ) {
+      prevSizeRef.current = { width, height }
       window.location.reload()
-    } else {
-      isMountRef.current = true
     }
   }, [height, width])
 

@@ -26,8 +26,8 @@ interface Mouseover {
   text: string[]
 }
 
-const Wrapper = styled.div<{ border: boolean }>`
-  ${(props) => (props.border ? 'border: 2px dashed #ccc;' : 'padding: 2px;')}
+const Wrapper = styled.div<{ $border: boolean }>`
+  ${(props) => (props.$border ? 'border: 2px dashed #ccc;' : 'padding: 2px;')}
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -195,7 +195,7 @@ const Model = () => {
 
   return (
     <Wrapper
-      border={resizable}
+      $border={resizable}
       onMouseOver={isMoc3 ? undefined : handleMouseOver}
       onClick={isMoc3 ? undefined : handleClick}
     >
