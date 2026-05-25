@@ -1,17 +1,12 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Button, Checkbox, Input, message } from 'antd'
+import { Button, Checkbox, Input } from 'antd'
 
 import { Dispatch, RootState } from '../../store'
 import styled from 'styled-components'
 
 const Wrapper = styled.div`
   padding: 10px;
-
-  & > div {
-    display: flex;
-    padding: 0 10px;
-  }
 `
 
 const DirRow = styled.div`
@@ -27,9 +22,11 @@ const TextAreaWrapStyled = styled.div`
     white-space: nowrap;
   }
 `
-const ButtonStyled = styled(Button)`
-  padding: 0 40px !important;
-  margin-left: auto;
+
+const BottomRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 `
 
 const Setting = () => {
@@ -41,33 +38,35 @@ const Setting = () => {
   const [value, setValue] = useState(() => modelList.join('\n'))
   const [dirPath, setDirPath] = useState('')
   const [scanning, setScanning] = useState(false)
+  const [status, setStatus] = useState('')
 
   const handleClickConfirmBtn = () => {
     const models = value.split('\n').filter(Boolean)
+    if (models.length === 0) return
     dispatch.config.setModelList(models)
     dispatch.config.setModelPath(models[0])
-    message.success(`已加载 ${models.length} 个模型`)
+    setStatus(`已加载 ${models.length} 个模型`)
   }
 
   const handleScanDir = async () => {
     if (!dirPath.trim()) {
-      message.warning('请输入模型目录路径')
+      setStatus('请输入路径')
       return
     }
     setScanning(true)
+    setStatus('扫描中...')
     try {
       const models = await window.bridge.scanDirectory(dirPath.trim())
       if (models.length === 0) {
-        message.warning('未发现模型文件（model.json / .model3.json）')
+        setStatus('未发现模型文件')
       } else {
-        // Merge with existing models, deduplicate
         const existing = new Set(value.split('\n').filter(Boolean))
         models.forEach((m) => existing.add(m))
         setValue(Array.from(existing).join('\n'))
-        message.success(`扫描到 ${models.length} 个模型`)
+        setStatus(`扫描到 ${models.length} 个模型`)
       }
     } catch (err) {
-      message.error('扫描失败: ' + (err as Error).message)
+      setStatus('扫描失败: ' + (err as Error).message)
     } finally {
       setScanning(false)
     }
@@ -77,7 +76,7 @@ const Setting = () => {
     <Wrapper>
       <DirRow>
         <Input
-          placeholder="模型目录路径，例如 /home/satori/GitHub/live2d-model-assets/assets"
+          placeholder="模型目录路径"
           value={dirPath}
           onChange={(ev) => setDirPath(ev.target.value)}
           style={{ flex: 1 }}
@@ -87,33 +86,29 @@ const Setting = () => {
         </Button>
       </DirRow>
 
-      模型列表：
+      模型列表（{value.split('\n').filter(Boolean).length} 个）：
       <TextAreaWrapStyled>
         <Input.TextArea
           rows={20}
           value={value}
-          onChange={(ev) => {
-            setValue(ev.target.value)
-          }}
+          onChange={(ev) => setValue(ev.target.value)}
         />
       </TextAreaWrapStyled>
-      <div>
-        <Checkbox
-          checked={useGhProxy}
-          onChange={(ev) => {
-            dispatch.config.setUseGhProxy(ev.target.checked)
-          }}
-        >
-          使用
-          <a href="https://ghproxy.com" target="_blank">
-            ghproxy
-          </a>
-          加速
-        </Checkbox>
-        <ButtonStyled type="primary" onClick={handleClickConfirmBtn}>
-          确定
-        </ButtonStyled>
-      </div>
+
+      <BottomRow>
+        <span style={{ color: '#52c41a' }}>{status}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Checkbox
+            checked={useGhProxy}
+            onChange={(ev) => dispatch.config.setUseGhProxy(ev.target.checked)}
+          >
+            ghproxy 加速
+          </Checkbox>
+          <Button type="primary" onClick={handleClickConfirmBtn}>
+            确定
+          </Button>
+        </div>
+      </BottomRow>
     </Wrapper>
   )
 }

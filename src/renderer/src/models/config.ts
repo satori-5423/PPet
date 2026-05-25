@@ -7,7 +7,7 @@ export const config = createModel<RootModel>()({
   state: {
     modelPath: initModelList[0],
     modelList: initModelList,
-    useGhProxy: true,
+    useGhProxy: false,
   } as { modelPath: string; modelList: string[]; useGhProxy: boolean },
   reducers: {
     setModelList(state, modelList: string[]) {
@@ -42,13 +42,9 @@ export const config = createModel<RootModel>()({
       return state
     },
   },
-  effects: (dispatch) => ({
-    // handle state changes with impure functions.
-    // use async/await for async actions
-    async incrementAsync(payload: number, state) {
-      console.log('This is current root state', state)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      dispatch.count.increment(payload)
+  effects: () => ({
+    async incrementAsync() {
+      // placeholder
     },
   }),
 })
