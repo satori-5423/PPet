@@ -2,7 +2,14 @@
 
 > 给你的桌面多一点趣味~
 >
-> 支持 Live2D v2 / v3 | Arch Linux + Hyprland (Wayland)
+> 支持 Live2D v2 / v3
+
+## ⚠️ 注意
+
+> - 由 **DeepSeek** 重构自 [zenghongtu/PPet](https://github.com/zenghongtu/PPet)
+> - 此为个人 fork，非通用仓库
+> - 仅支持 **Arch Linux + Hyprland (Wayland)** 环境
+> - 针对 **AMD GPU**（多卡）做了 ANGLE/opengles + SwiftShader 兼容优化
 
 ## 截图
 
