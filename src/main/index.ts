@@ -10,8 +10,8 @@ import { createWindow, winPagePathMap } from './window'
 
 remoteMain.initialize()
 
-const isWin7 = os.release().startsWith('6.1')
-if (isWin7) app.disableHardwareAcceleration()
+// const isWin7 = os.release().startsWith('6.1')
+// if (isWin7) app.disableHardwareAcceleration()
 
 if (app.isPackaged) {
   if (!app.requestSingleInstanceLock()) {
@@ -23,9 +23,9 @@ if (app.isPackaged) {
   }
 }
 
-app.commandLine.appendSwitch('disable-renderer-backgrounding')
-app.commandLine.appendSwitch('disable-background-timer-throttling')
-app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+// app.commandLine.appendSwitch('disable-renderer-backgrounding')
+// app.commandLine.appendSwitch('disable-background-timer-throttling')
+// app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 let mainWindowState: windowStateKeeper.State
 
