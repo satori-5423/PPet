@@ -3,11 +3,10 @@ export {}
 declare global {
   interface Window {
     bridge: {
-      __dirname: string
-      __filename: string
       getModels: (file?: File) => Promise<string[]>
+      scanDirectory: (dirPath: string) => Promise<string[]>
       setWinResizable: (resizable: boolean) => void
-      isWinResizable: () => boolean
+      isWinResizable: () => Promise<boolean>
       getConfig: () => Record<string, any>
     }
   }

@@ -43,6 +43,10 @@ const config = ipcRenderer.sendSync('get-config')
 
 contextBridge.exposeInMainWorld('bridge', {
   getModels,
+  scanDirectory: async (dirPath: string) => {
+    const models = await findModelFiles(dirPath)
+    return models.map((p) => 'file://' + p)
+  },
   setWinResizable: (resizable: boolean) =>
     ipcRenderer.send('set-resizable', resizable),
   isWinResizable: () => ipcRenderer.invoke('is-resizable'),
