@@ -1,6 +1,7 @@
 import { join } from 'path'
-import { app, BrowserWindow, ipcMain, protocol } from 'electron'
-import { readFile } from 'fs/promises'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createServer } from 'http'
+import { readFileSync } from 'fs'
 import windowStateKeeper from 'electron-window-state'
 
 import './initConfig'
@@ -16,49 +17,61 @@ app.commandLine.appendSwitch('use-angle', 'opengles')
 // Allow SwiftShader software fallback if hardware WebGL fails
 app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 
-const MIME_TYPES: Record<string, string> = {
-  json: 'application/json',
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  moc: 'application/octet-stream',
-  moc3: 'application/octet-stream',
-  mtl: 'text/plain',
-  dat: 'application/octet-stream',
+const MODEL_PORT = 19999
+
+const MIME_MAP: Record<string, string> = {
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.moc': 'application/octet-stream',
+  '.moc3': 'application/octet-stream',
+  '.mtl': 'text/plain',
+  '.dat': 'application/octet-stream',
+  '.fnt': 'application/octet-stream',
+  '.dds': 'application/octet-stream',
+  '.bin': 'application/octet-stream',
 }
 
-// Register privileged schemes before app is ready
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'ppet',
-    privileges: {
-      bypassCSP: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      stream: true,
-    },
-  },
-])
+// Local HTTP server to serve Live2D model files
+function startModelServer() {
+  const server = createServer((req, res) => {
+    // Decode and sanitize path
+    let filePath = decodeURIComponent(req.url || '/')
+    // Route: /model/... -> serve from filesystem root /
+    // But we only allow absolute paths for safety
+    if (!filePath.startsWith('/')) {
+      res.writeHead(400)
+      res.end('Bad request')
+      return
+    }
 
-// Helper to serve local files through the ppet:// protocol
-async function handlePpetRequest(request: Request): Promise<Response> {
-  try {
-    const url = new URL(request.url)
-    // ppet:///home/.../file.json -> /home/.../file.json
-    const filePath = decodeURIComponent(url.pathname)
-    const data = await readFile(filePath)
-    const ext = filePath.split('.').pop()?.toLowerCase() || ''
-    return new Response(data, {
-      headers: {
-        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+    // Security: disallow path traversal
+    if (filePath.includes('..')) {
+      res.writeHead(403)
+      res.end('Forbidden')
+      return
+    }
+
+    try {
+      const data = readFileSync(filePath)
+      const ext = filePath.slice(filePath.lastIndexOf('.'))
+      const mime = MIME_MAP[ext] || 'application/octet-stream'
+      res.writeHead(200, {
+        'Content-Type': mime,
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
-      },
-    })
-  } catch {
-    return new Response('Not found', { status: 404 })
-  }
+      })
+      res.end(data)
+    } catch {
+      res.writeHead(404)
+      res.end('Not found')
+    }
+  })
+
+  server.listen(MODEL_PORT, '127.0.0.1')
+  return server
 }
 
 if (app.isPackaged) {
@@ -71,8 +84,8 @@ if (app.isPackaged) {
 let mainWindowState: windowStateKeeper.State
 
 app.whenReady().then(async () => {
-  // Register ppet:// protocol for serving local Live2D model files
-  protocol.handle('ppet', handlePpetRequest)
+  // Start local model server
+  startModelServer()
 
   // Set up IPC handlers
   ipcMain.on('get-config', (event) => {

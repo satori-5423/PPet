@@ -7,18 +7,14 @@ export type CurrentType = {
 }
 
 const parseModelPath = (p: string) => {
-  // Handle ppet:/// and file:/// prefixes
+  // Handle http://127.0.0.1:19999/ prefix for local models
+  // and regular http/https URLs for online models
   let protocol = ''
   let cleanPath = p
-  if (p.startsWith('ppet:///')) {
-    protocol = 'ppet:///'
-    cleanPath = p.slice(9) // len of 'ppet:///'
-  } else if (p.startsWith('file:///')) {
-    protocol = 'file:///'
-    cleanPath = p.slice(8) // len of 'file:///'
-  } else if (p.startsWith('http://') || p.startsWith('https://')) {
-    protocol = p.startsWith('https://') ? 'https://' : 'http://'
-    cleanPath = p.slice(protocol.length)
+  if (p.startsWith('http://') || p.startsWith('https://')) {
+    const url = new URL(p)
+    cleanPath = url.pathname.slice(1) // remove leading /
+    protocol = url.origin + '/'
   }
 
   const paths = cleanPath.split('/')
