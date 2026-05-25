@@ -13,11 +13,16 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   html {
+    background: transparent;
     scroll-behavior: smooth;
     box-sizing: border-box;
     width: 100%;
     overflow: hidden;
     -webkit-user-select: none;
+  }
+
+  body {
+    background: transparent;
   }
 
   // Scrollbar styles

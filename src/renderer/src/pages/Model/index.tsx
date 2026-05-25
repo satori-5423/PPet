@@ -27,20 +27,20 @@ interface Mouseover {
 }
 
 const Wrapper = styled.div<{ $border: boolean }>`
-  ${(props) => (props.$border ? 'border: 2px dashed #ccc;' : 'padding: 2px;')}
+  ${(props) => (props.$border ? 'border: 2px dashed #ccc;' : '')}
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 `
 
 const RenderWrapper = styled.div`
-  margin-top: 20px;
+  margin-top: 0;
 `
 
 const getCavSize = () => {
   return {
     width: window.innerWidth,
-    height: window.innerHeight - 20,
+    height: window.innerHeight,
   }
 }
 
