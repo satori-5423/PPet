@@ -1,6 +1,6 @@
 import { init, RematchDispatch, RematchRootState } from '@rematch/core'
 import persistPlugin from '@rematch/persist'
-import { PersistConfig } from 'redux-persist'
+import { PersistConfig, getStoredState } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 
 import { models, RootModel } from './models'
@@ -17,13 +17,12 @@ const persistConfig: PersistConfig<
   storage,
   whitelist: ['config'],
   migrate: (state: any) => {
-    // Reset model list to defaults - user can scan for local models in Settings
+    // If model list contains stale file:// or ppet:// URLs, reset to defaults
     if (state?.config?.modelList?.length > 0) {
       const firstModel = state.config.modelList[0]
       if (
         firstModel.startsWith('file://') ||
-        firstModel.startsWith('ppet://') ||
-        firstModel.startsWith('http://127.0.0.1:19999')
+        firstModel.startsWith('ppet://')
       ) {
         return {
           ...state,

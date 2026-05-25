@@ -49,7 +49,6 @@ const Toolbar: FC<{
     ...state.config,
     ...state.win,
   }))
-
   const showMessage = (text: string, timeout: number, priority: number) => {
     onShowMessage({ text, priority, timeout })
   }
@@ -58,7 +57,9 @@ const Toolbar: FC<{
       .then((response) => response.json())
       .then((result) => {
         showMessage(result.hitokoto, 6000, 10)
+
         const text = `这句一言来自 <span>「${result.from}」</span>，是 <span>${result.creator}</span> 在 hitokoto.cn 投稿的。`
+
         window.setTimeout(() => {
           showMessage(text, 6000, 10)
         }, 6000)
@@ -67,6 +68,7 @@ const Toolbar: FC<{
   const loadOtherModel = () => {
     dispatch.config.nextModel()
   }
+  const capture = () => {}
   const setResizable = () => {
     dispatch.win.setResizable(!resizable)
   }
@@ -82,6 +84,7 @@ const Toolbar: FC<{
       icon: 'user-circle',
       call: loadOtherModel,
     },
+    // { name: 'camera', icon: 'camera-retro', call: capture },
     { name: 'square', icon: 'square-o', call: setResizable },
     { name: 'info', icon: 'info-circle', call: showInfo },
   ]

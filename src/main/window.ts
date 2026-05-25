@@ -8,8 +8,7 @@ export async function createWindow(
   pagePath: string = '',
 ) {
   const lastWin = winPagePathMap.get(pagePath)
-  // Never reuse settings window - always create fresh
-  if (pagePath !== '/setting' && lastWin && !lastWin.isDestroyed()) {
+  if (lastWin && !lastWin.isDestroyed()) {
     lastWin.focus()
     return
   }
