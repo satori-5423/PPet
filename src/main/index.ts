@@ -9,8 +9,9 @@ import { createWindow, winPagePathMap } from './window'
 // Force native Wayland - no XWayland fallback
 app.commandLine.appendSwitch('ozone-platform', 'wayland')
 
-// Use native EGL on Linux with AMD GPU (bypasses ANGLE which has issues with multi-GPU)
-app.commandLine.appendSwitch('use-gl', 'egl')
+// Use Vulkan backend via ANGLE for AMD GPU on Wayland
+app.commandLine.appendSwitch('use-gl', 'angle')
+app.commandLine.appendSwitch('use-angle', 'vulkan')
 
 // Register privileged schemes before app is ready (required in Electron 25+)
 protocol.registerSchemesAsPrivileged([
