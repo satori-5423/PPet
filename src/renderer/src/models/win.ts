@@ -5,7 +5,7 @@ const config = window.bridge.getConfig() || {}
 
 export const win = createModel<RootModel>()({
   state: {
-    resizable: window.bridge.isWinResizable(),
+    resizable: false,
     showTool: config.showTool ?? true,
     language: config.language ?? 'zh',
   } as { resizable: boolean; showTool: boolean; language: 'zh' | 'en' },

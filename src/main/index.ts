@@ -1,31 +1,17 @@
-import os from 'os'
 import { join } from 'path'
-import { app, BrowserWindow, protocol, session } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol } from 'electron'
 import windowStateKeeper from 'electron-window-state'
-import remoteMain from '@electron/remote/main'
 
 import './initConfig'
 import initTray from './tray'
 import { createWindow, winPagePathMap } from './window'
-
-remoteMain.initialize()
-
-// const isWin7 = os.release().startsWith('6.1')
-// if (isWin7) app.disableHardwareAcceleration()
 
 if (app.isPackaged) {
   if (!app.requestSingleInstanceLock()) {
     app.quit()
     process.exit(0)
   }
-  if (process.platform === 'darwin') {
-    app.dock.hide()
-  }
 }
-
-// app.commandLine.appendSwitch('disable-renderer-backgrounding')
-// app.commandLine.appendSwitch('disable-background-timer-throttling')
-// app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 let mainWindowState: windowStateKeeper.State
 
@@ -44,13 +30,29 @@ app
     })
   })
   .then(() => {
+    // Set up IPC handlers before creating windows
+    ipcMain.on('get-config', (event) => {
+      event.returnValue = (global as any).config
+    })
+
+    ipcMain.handle('is-resizable', (event) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      return win?.isResizable() ?? false
+    })
+
+    ipcMain.on('set-resizable', (_event, resizable: boolean) => {
+      const win = BrowserWindow.fromWebContents(_event.sender)
+      win?.setResizable(resizable)
+    })
+  })
+  .then(() => {
     mainWindowState = windowStateKeeper({
       defaultHeight: 600,
       defaultWidth: 350,
     })
   })
   .then(async () => {
-    const options = {
+    const options: Electron.BrowserWindowConstructorOptions = {
       title: 'PPet',
       alwaysOnTop: true,
       autoHideMenuBar: true,
@@ -65,7 +67,6 @@ app
       minimizable: false,
       maximizable: false,
       resizable: false,
-      // titleBarStyle: 'hidden',
       webPreferences: {
         preload: join(__dirname, '../preload/index.cjs'),
         webSecurity: false,
@@ -76,7 +77,6 @@ app
     const win = await createWindow(options)
     if (win) {
       mainWindowState.manage(win)
-
       initTray(win)
     }
   })
@@ -86,14 +86,9 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-app.on('browser-window-created', (ev, win) => {
-  remoteMain.enable(win.webContents)
-})
-
 app.on('second-instance', () => {
   const win = BrowserWindow.getAllWindows()[0]
   if (win) {
-    // Someone tried to run a second instance, we should focus our window.
     if (win.isMinimized()) win.restore()
     win.focus()
   }

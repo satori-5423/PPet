@@ -11,10 +11,7 @@ export const APP_DATA_PATH: string = app.getPath('appData')
 export const USER_DATA_PATH: string = app.getPath('userData')
 
 /** 应用程序的日志文件夹 */
-export const LOGS_PATH: string =
-  process.platform === 'darwin'
-    ? path.resolve(app.getPath('logs'), `../${app.name}`)
-    : path.resolve(USER_DATA_PATH, 'logs')
+export const LOGS_PATH: string = path.resolve(USER_DATA_PATH, 'logs')
 
 /** 资源文件夹 */
 export const ASSETS_PATH: string =

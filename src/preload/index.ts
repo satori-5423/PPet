@@ -1,42 +1,50 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import electron from '@electron/remote'
-import fs from 'fs/promises'
+import fs from 'fs'
 import path from 'path'
-import globby from 'globby'
+
+async function findModelFiles(dir: string): Promise<string[]> {
+  const results: string[] = []
+  let entries: fs.Dirent[]
+  try {
+    entries = await fs.promises.readdir(dir, { withFileTypes: true })
+  } catch {
+    return results
+  }
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      const subResults = await findModelFiles(fullPath)
+      results.push(...subResults)
+    } else if (
+      entry.name.endsWith('model.json') ||
+      entry.name.endsWith('.model3.json')
+    ) {
+      results.push(fullPath)
+    }
+  }
+  return results
+}
 
 const getModels = async (file: File) => {
-  const filePath = file.path
+  const filePath = (file as any).path
   if (filePath.endsWith('model.json') || filePath.endsWith('.model3.json')) {
     return [filePath]
   }
 
-  console.log('getModels: ', filePath)
-  return fs.stat(filePath).then(async (f) => {
-    if (f.isDirectory()) {
-      const result = await globby(['**/*model.json', '**.model3.json'], {
-        cwd: filePath,
-      })
-      return result.map((f) => path.join(filePath, f))
-    }
-    return []
-  })
+  const stat = await fs.promises.stat(filePath)
+  if (stat.isDirectory()) {
+    return findModelFiles(filePath)
+  }
+  return []
 }
 
-const setWinResizable = (resizable: boolean) => {
-  electron.getCurrentWindow().setResizable(resizable)
-}
-
-const isWinResizable = () => {
-  return electron.getCurrentWindow().isResizable()
-}
-
-const getConfig = () => electron.getGlobal('config')
+// Get config synchronously during preload initialization
+const config = ipcRenderer.sendSync('get-config')
 
 contextBridge.exposeInMainWorld('bridge', {
-  __dirname,
-  __filename,
   getModels,
-  setWinResizable,
-  isWinResizable,
-  getConfig,
+  setWinResizable: (resizable: boolean) =>
+    ipcRenderer.send('set-resizable', resizable),
+  isWinResizable: () => ipcRenderer.invoke('is-resizable'),
+  getConfig: () => config,
 })

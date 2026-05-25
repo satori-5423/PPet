@@ -1,5 +1,5 @@
 import { join } from 'path'
-import electron, {
+import {
   Tray,
   nativeImage,
   app,
@@ -12,10 +12,7 @@ import electron, {
 import { config } from '@src/common'
 
 import { createWindow } from './window'
-import stripTrayIcon from '../../static/icons/strip-tray.png'
 import trayIcon from '../../static/icons/tray.png'
-
-const currentIcon = process.platform === 'darwin' ? stripTrayIcon : trayIcon
 
 const langs = {
   zh: {
@@ -96,7 +93,7 @@ let tray: electron.Tray
 
 const initTray = (mainWindow: BrowserWindow) => {
   if (!tray) {
-    tray = new Tray(nativeImage.createFromDataURL(currentIcon))
+    tray = new Tray(nativeImage.createFromDataURL(trayIcon))
   }
 
   const handleClickLangRadio = (lang: langType) => {
@@ -253,14 +250,13 @@ const initTray = (mainWindow: BrowserWindow) => {
     },
     {
       label: cl.quit,
-      click: (item) => {
+      click: () => {
         app.quit()
       },
     },
   ]
 
   const menu = Menu.buildFromTemplate(template)
-
   tray.setContextMenu(menu)
 }
 
