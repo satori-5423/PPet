@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useLayoutEffect, useRef } from 'react'
+import React, { FC, useEffect, useRef } from 'react'
 
 export type CurrentType = {
   modelPath: string
@@ -7,11 +7,22 @@ export type CurrentType = {
 }
 
 const parseModelPath = (p: string) => {
-  const paths = p.split('/')
-  paths.pop()
+  // Handle file:/// prefix - preserve triple slash for absolute paths
+  let protocol = ''
+  let cleanPath = p
+  if (p.startsWith('file:///')) {
+    protocol = 'file:///'
+    cleanPath = p.slice(8) // len of 'file:///'
+  } else if (p.startsWith('http://') || p.startsWith('https://')) {
+    protocol = p.startsWith('https://') ? 'https://' : 'http://'
+    cleanPath = p.slice(protocol.length)
+  }
+
+  const paths = cleanPath.split('/')
+  paths.pop() // remove model json filename
 
   const modelName = paths.pop()
-  const basePath = paths.join('/')
+  const basePath = protocol + paths.join('/') + '/'
 
   return {
     basePath,
