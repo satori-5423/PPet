@@ -1,5 +1,6 @@
 import { join } from 'path'
-import { app, BrowserWindow, ipcMain, protocol, net } from 'electron'
+import { app, BrowserWindow, ipcMain, protocol } from 'electron'
+import { readFile } from 'fs/promises'
 import windowStateKeeper from 'electron-window-state'
 
 import './initConfig'
@@ -36,10 +37,32 @@ if (app.isPackaged) {
 let mainWindowState: windowStateKeeper.State
 
 app.whenReady().then(async () => {
-  // Handle file:// protocol for loading local Live2D models
-  protocol.handle('file', (request) => {
-    const url = request.url.replace('file://', '')
-    return net.fetch('file://' + url)
+  // Handle file:// protocol by reading files directly and returning proper Response
+  protocol.handle('file', async (request) => {
+    try {
+      const url = new URL(request.url)
+      const filePath = decodeURIComponent(url.pathname)
+      const data = await readFile(filePath)
+      const ext = filePath.split('.').pop()?.toLowerCase() || ''
+      const mimeTypes: Record<string, string> = {
+        json: 'application/json',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        moc: 'application/octet-stream',
+        moc3: 'application/octet-stream',
+        mtl: 'text/plain',
+      }
+      return new Response(data, {
+        headers: {
+          'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
   })
 
   // Set up IPC handlers before creating windows
@@ -81,7 +104,6 @@ app.whenReady().then(async () => {
       preload: join(__dirname, '../preload/index.cjs'),
       webSecurity: false,
       sandbox: false,
-      // Allow background throttling to reduce CPU usage when idle
       backgroundThrottling: true,
     },
   }
