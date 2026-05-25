@@ -2,10 +2,6 @@ import { init, RematchDispatch, RematchRootState } from '@rematch/core'
 import persistPlugin from '@rematch/persist'
 import { PersistConfig } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
-import {
-  createStateSyncMiddleware,
-  initStateWithPrevTab,
-} from 'redux-state-sync'
 
 import { models, RootModel } from './models'
 
@@ -21,14 +17,11 @@ const persistConfig: PersistConfig<
 }
 
 const store = init({
-  redux: { middlewares: [createStateSyncMiddleware({})] },
   models,
   plugins: [
     persistPlugin<RematchRootState<RootModel>, RootModel>(persistConfig),
   ],
 })
-
-initStateWithPrevTab(store)
 
 export default store
 

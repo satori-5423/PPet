@@ -10,9 +10,11 @@ import { createWindow, winPagePathMap } from './window'
 // Force native Wayland - no XWayland fallback
 app.commandLine.appendSwitch('ozone-platform', 'wayland')
 
-// Use Vulkan backend via ANGLE for AMD GPU on Wayland
+// Use ANGLE with OpenGL ES backend via EGL for WebGL on Wayland
 app.commandLine.appendSwitch('use-gl', 'angle')
-app.commandLine.appendSwitch('use-angle', 'vulkan')
+app.commandLine.appendSwitch('use-angle', 'opengles')
+// Allow SwiftShader software fallback if hardware WebGL fails
+app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 
 // Register privileged schemes before app is ready (required in Electron 25+)
 protocol.registerSchemesAsPrivileged([

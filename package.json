@@ -23,7 +23,6 @@
     "@rematch/persist": "^2.1.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/redux-state-sync": "^3.1.0",
     "@vitejs/plugin-react": "^4.3.0",
     "antd": "^5.22.0",
     "chalk": "^5.0.0",
@@ -39,7 +38,6 @@
     "react-router-dom": "^6.28.0",
     "redux": "^4.2.1",
     "redux-persist": "^6.0.0",
-    "redux-state-sync": "^3.1.0",
     "styled-components": "^6.0.0",
     "typescript": "^5.0.0",
     "vite": "^6.0.0"
