@@ -35,7 +35,7 @@ if (app.isPackaged) {
 
 let mainWindowState: windowStateKeeper.State
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Handle file:// protocol for loading local Live2D models
   protocol.handle('file', (request) => {
     const url = request.url.replace('file://', '')
@@ -80,17 +80,17 @@ app.whenReady().then(() => {
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       webSecurity: false,
+      sandbox: false,
       // Allow background throttling to reduce CPU usage when idle
       backgroundThrottling: true,
     },
   }
 
-  createWindow(options).then((win) => {
-    if (win) {
-      mainWindowState.manage(win)
-      initTray(win)
-    }
-  })
+  const win = await createWindow(options)
+  if (win) {
+    mainWindowState.manage(win)
+    initTray(win)
+  }
 })
 
 app.on('window-all-closed', () => {
